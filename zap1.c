@@ -1,5 +1,34 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <utmpx.h> // struct utmp#include
+#include <lastlog.h>
+#include <fcntl.h> // O_RDWR
+#include <sys/stat.h>
+#include <string.h>
+
+#define UCHUNKSIZE	16384	/* How much we read at once. */
+
+void process_wtmp(char *filename) {
+    int fp;
+	struct utmpx ut;	/* Current utmp entry */
+	time_t begintime;
+    time_t lastdown;
+    struct stat st;
+
+    int quit = 0;
+
+
+    if ((fp = open(filename,O_RDWR)) >= 0) {
+        while(read(fp, &ut, sizeof (ut))> 0) {
+            printf("ut_type: %d ut_line: %s ut_id: %s ut_user: %s ut_host: %s ut_exit: %d ut_exit_termination: %d\n", ut.ut_type, ut.ut_line, ut.ut_id, ut.ut_user, ut.ut_host, ut.ut_exit.__e_exit, ut.ut_exit.__e_termination);
+            time_t seconds = ut.ut_tv.tv_sec;
+            printf("tv_sec: %d \n", ut.ut_tv.tv_sec);
+        }
+        close(fp);
+    }
+
+}
 
 int main(int argc, char **argv) {
     int c;
@@ -51,4 +80,6 @@ int main(int argc, char **argv) {
     printf("src_username: %s, tgt_username: %s\n", src_username, tgt_username);
     printf("src_day: %s, tgt_day: %s\n", src_day, tgt_day);
     printf("src_terminal: %s, tgt_terminal: %s\n", src_terminal, tgt_terminal);
+
+    process_wtmp("./wtmp");
 }

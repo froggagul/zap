@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "utmp.h": "c",
+        "lastlog.h": "c",
+        "types.h": "c",
+        "fcntl.h": "c",
+        "stdio.h": "c",
+        "stat.h": "c"
+    }
+}
