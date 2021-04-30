@@ -19,7 +19,7 @@ void getYMD(char *buf, time_t t) {
     struct tm* ptm;
     ptm = gmtime(&t);
     strftime(buf, sizeof(buf), "%d%m%y", ptm);
-    printf("The date is: %s\n", buf);
+    // printf("The date is: %s\n", buf);
 }
 
 time_t getSeconds(char *buf) {
@@ -56,9 +56,14 @@ void read_tmp(char *filename, char*filename_new) {
     }
 }
 
+int is_valid() {
+    int valid = 0;
+}
+
 void process_tmp(char *filename, char *filename_new, int is_replace, char *src_username, char *tgt_username, char *src_day, char *tgt_day, char *src_terminal, char *tgt_terminal) {
     int fp, fp_new;
-	struct utmpx ut;	/* Current utmp entry */
+	struct utmpx ut;	/* modified utmp entry */
+	struct utmpx ut_base;	/* base utmp entry */
 
     int quit = 0;
     remove(filename_new);
@@ -70,19 +75,40 @@ void process_tmp(char *filename, char *filename_new, int is_replace, char *src_u
             getYMD(buf, seconds);
 
             if (is_replace) {
-                if (strncmp(ut.ut_user, src_username, max(sizeof(ut.ut_user), sizeof(src_username))) == 0) {
-                    strncpy(ut.ut_user, tgt_username, sizeof(ut.ut_user));
+                ut_base = ut;
+                int write_replace = 1;
+                if (strlen(src_username) != 0 && strlen(tgt_username) != 0) {
+                    if (strncmp(ut.ut_user, src_username, max(sizeof(ut.ut_user), sizeof(src_username))) == 0) {
+                        write_replace &= 1;
+                        strncpy(ut.ut_user, tgt_username, sizeof(ut.ut_user));
+                    } else {
+                        write_replace &= 0;
+                    }
                 }
-                if (strncmp(ut.ut_line, src_terminal, max(sizeof(ut.ut_line), sizeof(src_terminal))) == 0) {
-                    strncpy(ut.ut_line, tgt_terminal, sizeof(ut.ut_line));
+                if (strlen(src_terminal) != 0 && strlen(tgt_username) != 0) {
+                    if (strncmp(ut.ut_line, src_terminal, max(sizeof(ut.ut_line), sizeof(src_terminal))) == 0) {
+                        write_replace &= 1;
+                        strncpy(ut.ut_line, tgt_terminal, sizeof(ut.ut_line));
+                    } else {
+                        write_replace &= 0;
+                    }
                 }
-                if (strncmp(buf, src_day, max(sizeof(buf), sizeof(src_day))) == 0) {
-                    time_t tgt_seconds = getSeconds(tgt_day);
-                    time_t src_seconds = getSeconds(buf);
-                    seconds = seconds + (tgt_seconds - src_seconds);
-                    ut.ut_tv.tv_sec = seconds;
+                if (strlen(src_day) != 0 && strlen(tgt_day) != 0) {
+                    if (strncmp(buf, src_day, max(sizeof(buf), sizeof(src_day))) == 0) {
+                        write_replace &= 1;
+                        time_t tgt_seconds = getSeconds(tgt_day);
+                        time_t src_seconds = getSeconds(buf);
+                        seconds = seconds + (tgt_seconds - src_seconds);
+                        ut.ut_tv.tv_sec = seconds;
+                    } else {
+                        write_replace &= 0;
+                    }
                 }
-                write (fp_new, &ut, sizeof (ut));
+                if (write_replace) {
+                    write (fp_new, &ut, sizeof (ut));                
+                } else {
+                    write (fp_new, &ut_base, sizeof (ut_base));
+                }
             } else {
                 if (strncmp(ut.ut_user, src_username, max(sizeof(ut.ut_user), sizeof(src_username))) != 0 && strncmp(ut.ut_line, src_terminal, max(sizeof(ut.ut_line), sizeof(src_terminal))) != 0 && strncmp(buf, src_day, max(sizeof(buf), sizeof(src_day))) != 0) {
                     write (fp_new, &ut, sizeof (ut));
@@ -100,10 +126,27 @@ void process_lastlog(char *filename, char *filename_new, int is_replace, char *s
 
     int quit = 0;
     remove(filename_new);
+    struct passwd *pwd;
+    uid_t src_id = -1, tgt_id = -1;
 
+    pwd = getpwnam(src_username);
+    src_id = pwd->pw_uid;
+    if (is_replace) {
+        pwd = getpwnam(tgt_username);
+        tgt_id = pwd->pw_uid;
+    }
+
+    uid_t cur_id = 0;
     if ((fp = open(filename,O_RDWR)) >= 0 && (fp_new = open(filename_new,O_RDWR | O_CREAT, 0664)) >= 0) {
         while(read(fp, &ll, sizeof (ll))> 0) {
-            printf("ll_host: %s ll_line: %s ll_time: %d\n", ll.ll_host, ll.ll_line, ll.ll_time);
+            printf("ll_host: %s ll_line: %s ll_time: %d id: %d\n", ll.ll_host, ll.ll_line, ll.ll_time, cur_id);
+            if (cur_id == src_id) {
+                printf("src_user: %s id: %d\n", src_username, src_id);
+            }
+            if (cur_id == tgt_id) {
+                printf("tgt_user: %s id: %d\n", tgt_username, tgt_id);
+            }
+            cur_id += 1;
         }
         close(fp);
         close(fp_new);
@@ -113,12 +156,18 @@ void process_lastlog(char *filename, char *filename_new, int is_replace, char *s
 
 int main(int argc, char **argv) {
     int c;
-    char *src_username = (char*)malloc(100);
-    char *tgt_username = (char*)malloc(100);
-    char *src_day = (char*)malloc(100);
-    char *tgt_day = (char*)malloc(100);
-    char *src_terminal = (char*)malloc(100);
-    char *tgt_terminal = (char*)malloc(100);
+    char *src_username;
+    src_username = calloc(100, sizeof(char));
+    char *tgt_username;
+    tgt_username = calloc(100, sizeof(char));
+    char *src_day;
+    src_day = calloc(100, sizeof(char));
+    char *tgt_day;
+    tgt_day = calloc(100, sizeof(char));
+    char *src_terminal;
+    src_terminal = calloc(100, sizeof(char));
+    char *tgt_terminal;
+    tgt_terminal = calloc(100, sizeof(char));
     char *filename = (char*)malloc(100);
     char *filename_new = (char*)malloc(100);
     
@@ -167,18 +216,18 @@ int main(int argc, char **argv) {
     printf("src_terminal: %s, tgt_terminal: %s\n", src_terminal, tgt_terminal);
 
 
-    // strncpy(filename, "./wtmp", 7);
-    // strncpy(filename_new, "./wtmp_new", 11);
-    // process_tmp(filename, filename_new, is_replace, src_username, tgt_username, src_day, tgt_day, src_terminal, tgt_terminal);
-    // read_tmp(filename, filename_new);
+    strncpy(filename, "./wtmp", 7);
+    strncpy(filename_new, "./wtmp_new", 11);
+    process_tmp(filename, filename_new, is_replace, src_username, tgt_username, src_day, tgt_day, src_terminal, tgt_terminal);
+    read_tmp(filename, filename_new);
 
     // strncpy(filename, "./utmp", 7);
     // strncpy(filename_new, "./utmp_new", 11);
     // process_tmp(filename, filename_new, is_replace, src_username, tgt_username, src_day, tgt_day, src_terminal, tgt_terminal);
 
-    strncpy(filename, "./lastlog", 10);
-    strncpy(filename_new, "./lastlog_new", 14);
-    process_lastlog(filename, filename_new, is_replace, src_username, tgt_username, src_day, tgt_day, src_terminal, tgt_terminal);
+    // strncpy(filename, "./lastlog", 10);
+    // strncpy(filename_new, "./lastlog_new", 14);
+    // process_lastlog(filename, filename_new, is_replace, src_username, tgt_username, src_day, tgt_day, src_terminal, tgt_terminal);
 
     // rename("./wtmp", "./wtmp_backup");
     // rename("./wtmp_new", "./wtmp");
