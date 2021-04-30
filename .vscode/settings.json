@@ -5,6 +5,8 @@
         "types.h": "c",
         "fcntl.h": "c",
         "stdio.h": "c",
-        "stat.h": "c"
+        "stat.h": "c",
+        "time.h": "c",
+        "utmpx.h": "c"
     }
 }
