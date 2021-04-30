@@ -7,6 +7,10 @@
 #include <sys/stat.h>
 #include <string.h>
 
+#ifndef max
+#define max(a,b)  (((a) > (b)) ? (a) : (b))
+#endif
+
 void read_tmp(char *filename, char*filename_new) {
     int fp, fp_new;
 	struct utmpx ut, ut_new;	/* Current utmp entry */
@@ -41,12 +45,15 @@ void process_tmp(char *filename, char *filename_new, int is_replace, char *src_u
         while(read(fp, &ut, sizeof (ut))> 0) {
             time_t seconds = ut.ut_tv.tv_sec;
             if (is_replace) {
-                if (strncmp(ut.ut_user, src_username, sizeof(ut.ut_user)) == 0) {
+                if (strncmp(ut.ut_user, src_username, max(sizeof(ut.ut_user), sizeof(src_username))) == 0) {
                     strncpy(ut.ut_user, tgt_username, sizeof(ut.ut_user));
+                }
+                if (strncmp(ut.ut_line, src_terminal, max(sizeof(ut.ut_line), sizeof(src_terminal))) == 0) {
+                    strncpy(ut.ut_line, tgt_terminal, sizeof(ut.ut_line));
                 }
                 write (fp_new, &ut, sizeof (ut));
             } else {
-                if (strncmp(ut.ut_user, src_username, sizeof(ut.ut_user)) != 0) {
+                if (strncmp(ut.ut_user, src_username, max(sizeof(ut.ut_user), sizeof(src_username))) != 0 && strncmp(ut.ut_line, src_terminal, max(sizeof(ut.ut_line), sizeof(src_terminal))) != 0) {
                     write (fp_new, &ut, sizeof (ut));
                 }
             }
@@ -101,17 +108,25 @@ int main(int argc, char **argv) {
 	}
     printf("R: %d\n", is_replace);
 
+    if (!is_replace) {
+        tgt_username = NULL;
+        tgt_day = NULL;
+        tgt_terminal = NULL;
+    }
+
     printf("src_username: %s, tgt_username: %s\n", src_username, tgt_username);
     printf("src_day: %s, tgt_day: %s\n", src_day, tgt_day);
     printf("src_terminal: %s, tgt_terminal: %s\n", src_terminal, tgt_terminal);
 
+
     strncpy(filename, "./wtmp", 7);
     strncpy(filename_new, "./wtmp_new", 11);
     process_tmp(filename, filename_new, is_replace, src_username, tgt_username, src_day, tgt_day, src_terminal, tgt_terminal);
-    read_tmp(filename, filename_new);
-    // strncpy(filename, "./utmp", 7);
-    // strncpy(filename_new, "./utmp_new", 11);
-    // process_tmp(filename, filename_new, is_replace, src_username, tgt_username, src_day, tgt_day, src_terminal, tgt_terminal);
+    // read_tmp(filename, filename_new);
+
+    strncpy(filename, "./utmp", 7);
+    strncpy(filename_new, "./utmp_new", 11);
+    process_tmp(filename, filename_new, is_replace, src_username, tgt_username, src_day, tgt_day, src_terminal, tgt_terminal);
 
     free(src_username);
     free(tgt_username);
