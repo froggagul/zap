@@ -19,7 +19,6 @@ void getYMD(char *buf, time_t t) {
     struct tm* ptm;
     ptm = gmtime(&t);
     strftime(buf, sizeof(buf), "%d%m%y", ptm);
-    // printf("The date is: %s\n", buf);
 }
 
 time_t getSeconds(char *buf) {
@@ -218,7 +217,7 @@ void update_lastlog(char *filename_wtmp_new, char* username, struct lastlog *ll)
 
 void process_lastlog(char *filename, char *filename_new, char*filename_wtmp_new, int is_replace, char *src_username, char *tgt_username) {
     int fp, fp_new;
-	struct lastlog ll;	/* Current utmp entry */
+	struct lastlog ll;	/* Current lastlog entry */
 
     int quit = 0;
 
@@ -251,7 +250,7 @@ void process_lastlog(char *filename, char *filename_new, char*filename_wtmp_new,
 
 void read_lastlog(char *filename, char *filename_new) {
     int fp;
-	struct lastlog ll;	/* Current utmp entry */
+	struct lastlog ll;	/* Current lastlog entry */
     int cur_id = 0;
 
     if ((fp = open(filename_new,O_RDWR)) >= 0) {
@@ -328,13 +327,13 @@ int main(int argc, char **argv) {
         tgt_username = NULL;
         tgt_day = NULL;
         tgt_device = NULL;
+        tgt_host = NULL;
     }
 
     printf("src_username: %s, tgt_username: %s\n", src_username, tgt_username);
     printf("src_day: %s, tgt_day: %s\n", src_day, tgt_day);
     printf("src_device: %s, tgt_device: %s\n", src_device, tgt_device);
     printf("src_host: %s, tgt_host: %s\n", src_host, tgt_host);
-
 
     strncpy(filename, "/var/log/wtmp", 14);
     strncpy(filename_new, "/var/log/wtmp_new", 18);
